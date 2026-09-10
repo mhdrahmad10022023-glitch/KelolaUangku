@@ -1227,7 +1227,7 @@ white-space: nowrap;
    4) Buat Cloud Firestore dan pasang rules dari firestore.rules.
    ============================================================ */
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js';
 import {
   getAuth,
   setPersistence,
@@ -1237,7 +1237,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   signOut
-} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js';
 import {
   getFirestore,
   doc,
@@ -1245,7 +1245,7 @@ import {
   setDoc,
   onSnapshot,
   serverTimestamp
-} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+} from 'https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js';
 
 // ===== ISI CONFIG FIREBASE ANDA DI SINI =====
 const firebaseConfig = {
@@ -1258,7 +1258,8 @@ const firebaseConfig = {
 };
 // ===========================================
 
-const configReady = Object.values(firebaseConfig).every(v => v && !String(v).includes('ISI_'));
+const configReady = firebaseConfig.projectId === 'kelola-uangku' && Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.appId);
+let firebaseInitError = null;
 let auth = null;
 let db = null;
 let currentUser = null;
@@ -1302,8 +1303,13 @@ function firebaseErrorMessage(error) {
 }
 
 window.loginFirebase = async function() {
-  if (!configReady || !auth) {
-    setAuthMessage('Firebase belum dikonfigurasi. Isi firebaseConfig pada bagian FIREBASE + GITHUB PAGES di file index.html.', 'error');
+  if (!configReady) {
+    setAuthMessage('Konfigurasi Firebase belum lengkap.', 'error');
+    return;
+  }
+  if (!auth) {
+    const detail = firebaseInitError?.message ? ` Detail: ${firebaseInitError.message}` : '';
+    setAuthMessage('Firebase belum berhasil aktif di browser. Refresh halaman sekali lalu coba lagi.' + detail, 'error');
     return;
   }
   const email = document.getElementById('auth-email').value.trim();
@@ -1322,8 +1328,13 @@ window.loginFirebase = async function() {
 };
 
 window.daftarFirebase = async function() {
-  if (!configReady || !auth) {
-    setAuthMessage('Firebase belum dikonfigurasi. Isi firebaseConfig terlebih dahulu.', 'error');
+  if (!configReady) {
+    setAuthMessage('Konfigurasi Firebase belum lengkap.', 'error');
+    return;
+  }
+  if (!auth) {
+    const detail = firebaseInitError?.message ? ` Detail: ${firebaseInitError.message}` : '';
+    setAuthMessage('Firebase belum berhasil aktif di browser. Refresh halaman sekali lalu coba lagi.' + detail, 'error');
     return;
   }
   const email = document.getElementById('auth-email').value.trim();
@@ -1342,8 +1353,13 @@ window.daftarFirebase = async function() {
 };
 
 window.resetPasswordFirebase = async function() {
-  if (!configReady || !auth) {
-    setAuthMessage('Firebase belum dikonfigurasi.', 'error');
+  if (!configReady) {
+    setAuthMessage('Konfigurasi Firebase belum lengkap.', 'error');
+    return;
+  }
+  if (!auth) {
+    const detail = firebaseInitError?.message ? ` Detail: ${firebaseInitError.message}` : '';
+    setAuthMessage('Firebase belum berhasil aktif di browser. Refresh halaman sekali lalu coba lagi.' + detail, 'error');
     return;
   }
   const email = document.getElementById('auth-email').value.trim();
@@ -1711,7 +1727,8 @@ async function initFirebase() {
       document.getElementById('pin-overlay').style.display = 'flex';
     });
   } catch (error) {
-    console.error(error);
+    firebaseInitError = error;
+    console.error('Firebase init error:', error);
     signedOutUI();
     setAuthMessage('Firebase gagal diinisialisasi: ' + firebaseErrorMessage(error), 'error');
   }
